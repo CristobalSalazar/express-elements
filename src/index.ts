@@ -1,2 +1,2 @@
 export { provider, pipe } from './components'
-export { Props, Pipe as Handler } from './app-types'
+export { Props, Pipe } from './app-types'

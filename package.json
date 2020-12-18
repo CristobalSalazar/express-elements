@@ -1,6 +1,6 @@
 {
   "name": "express-pipes",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Component utility for express",
   "main": "index.js",
   "scripts": {

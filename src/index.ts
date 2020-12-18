@@ -1,2 +1,2 @@
-export { provider, pipe } from './components'
-export { Props, Pipe } from './app-types'
+export { provider, el } from "./el";
+export { Props, Element, ElementFn } from "./app-types";

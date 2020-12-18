@@ -125,7 +125,7 @@ These are the corresponding functions that get called on return values
   return 'hello'
 },
 
-// numbers use res.send()
+// numbers use res.sendStatus()
 (props) => {
   return 1
 },

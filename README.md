@@ -339,5 +339,3 @@ const Component = pipe<MyProps>([
   },
 ])
 ```
-
-### Thank you for checking out the library! I hope you find a good use for it. If you have any suggestions or come across any bugs feel free to file issues.

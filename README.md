@@ -1,5 +1,9 @@
 # Express Pipes
 
+| Statements                  | Branches                | Functions                 | Lines             |
+| --------------------------- | ----------------------- | ------------------------- | ----------------- |
+| ![Statements](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) | ![Branches](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) | ![Lines](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) |
+
 A lightweight, zero dependency library that allows you to create modular, reusable components in express.
 
 Inspired heavily by React and Koa
@@ -21,15 +25,15 @@ A pipe is simply an array of middleware functions that get executed in order.
 ```js
 const MyPipe = [
   (props) => {
-    console.log('First!')
+    console.log("First!");
   },
   (props) => {
-    console.log('Second!')
+    console.log("Second!");
   },
   (props) => {
-    console.log('Third!')
+    console.log("Third!");
   },
-]
+];
 ```
 
 Each function in the array accepts a props object containing [req](https://expressjs.com/en/api.html#req) and [res](https://expressjs.com/en/api.html#res).
@@ -37,9 +41,9 @@ Each function in the array accepts a props object containing [req](https://expre
 ```js
 const Logger = [
   ({ req, res }) => {
-    console.log(req.method, req.url)
+    console.log(req.method, req.url);
   },
-]
+];
 ```
 
 Pipes are **composable** You can nest pipes within themselves which allows you to breakdown and reuse logic across different components
@@ -47,24 +51,24 @@ Pipes are **composable** You can nest pipes within themselves which allows you t
 ```js
 const CleanUp1 = [
   (props) => {
-    console.log('doing some clean up')
+    console.log("doing some clean up");
   },
-]
+];
 
 const CleanUp2 = [
   (props) => {
-    console.log('doing some more clean up')
+    console.log("doing some more clean up");
   },
-]
+];
 
-const CleanUp = [CleanUp1, CleanUp2]
+const CleanUp = [CleanUp1, CleanUp2];
 
 const MessyPipe = [
   (props) => {
-    console.log('making a mess')
+    console.log("making a mess");
   },
   CleanUp, // Runs CleanUp1 and CleanUp2
-]
+];
 ```
 
 You can also create higher order components similar to React.
@@ -73,14 +77,14 @@ We could have used clean up as such:
 
 ```js
 function withCleanUp(component) {
-  return [component, CleanUp1, CleanUp2]
+  return [component, CleanUp1, CleanUp2];
 }
 
 const MessyPipe = withCleanUp([
   (props) => {
-    console.log('making a mess')
+    console.log("making a mess");
   },
-])
+]);
 ```
 
 ## Passing Data
@@ -91,13 +95,13 @@ Instead of attaching data to the request object as is typical in express, you ca
 const AddUser = [
   (props) => {
     props.user = {
-      username: 'foo',
-    }
+      username: "foo",
+    };
   },
   ({ user }) => {
-    console.log('added user', user.username) // 'added user foo'
+    console.log("added user", user.username); // 'added user foo'
   },
-]
+];
 ```
 
 ## Return Values
@@ -107,9 +111,9 @@ Returning a value from a function will call the respective res function.
 ```js
 const MyPipe = [
   (props) => {
-    return { foo: 'bar' } // res.json({ foo: 'bar' })
+    return { foo: "bar" }; // res.json({ foo: 'bar' })
   },
-]
+];
 ```
 
 These are the corresponding functions that get called on return values
@@ -156,7 +160,7 @@ To register a component in a way that express can understand you need to use the
 The pipe method transforms your component into express middleware
 
 ```js
-const { pipe } = require('express-pipes')
+const { pipe } = require("express-pipes");
 ```
 
 Then somewhere in your app
@@ -164,11 +168,11 @@ Then somewhere in your app
 ```js
 const Logger = [
   (props) => {
-    console.log(props.req.method, props.req.url)
+    console.log(props.req.method, props.req.url);
   },
-]
+];
 
-app.use(pipe(Logger))
+app.use(pipe(Logger));
 ```
 
 You may also wish to use the pipe method directly on components
@@ -176,11 +180,11 @@ You may also wish to use the pipe method directly on components
 ```js
 const Logger = pipe([
   (props) => {
-    console.log(props.req.method, props.req.url)
+    console.log(props.req.method, props.req.url);
   },
-])
+]);
 
-app.use(Logger)
+app.use(Logger);
 ```
 
 pipe is smart enough to know which components it has already transformed. You can use it on every component at no cost
@@ -211,7 +215,7 @@ const withComponent1And2(component) {
 The only other export apart from pipe (and type definitions) is provider
 
 ```js
-const { provider } = require('express-pipes')
+const { provider } = require("express-pipes");
 ```
 
 Provider allows you to populate the props object with values to be consumed by pipes downstream
@@ -223,23 +227,23 @@ For instance you can use it to provide services to your pipes
 const ServiceProvider = provider({
   validate: new ValidationService(),
   models: new ModelService(),
-})
+});
 
 // Register them
-app.use(ServiceProvider)
+app.use(ServiceProvider);
 
 // Consume them
 const Register = pipe([
   async (props) => {
-    const { validate, models } = props
-    const { email, name, password } = validate.register(req.body)
-    const user = await models.User.create({ email, name, password })
-    props.user = user
+    const { validate, models } = props;
+    const { email, name, password } = validate.register(req.body);
+    const user = await models.User.create({ email, name, password });
+    props.user = user;
   },
   SendRegistrationEmail,
-])
+]);
 
-app.post('/register', Register)
+app.post("/register", Register);
 ```
 
 ## Typescript
@@ -249,15 +253,15 @@ Strong type support is included as express pipes was built with typescript.
 To define a pipe component use the Pipe type
 
 ```ts
-import { Pipe } from 'express-pipes'
+import { Pipe } from "express-pipes";
 
 const Component: Pipe = [
   (props) => {
     // these will have types
-    props.req
-    props.res
+    props.req;
+    props.res;
   },
-]
+];
 ```
 
 ## Custom Types
@@ -272,14 +276,14 @@ Assuming we have an object somewhere in our code that exports our services
 export default {
   jwt: new JwtService(),
   logger: new LoggerService(),
-}
+};
 ```
 
 To Access these types across our project we will want to make use of Props and Pipe types both exported from the library.
 
 ```ts
-import { Props, Pipe } from 'express-pipes'
-import services from './services'
+import { Props, Pipe } from "express-pipes";
+import services from "./services";
 ```
 
 Now we can make use of these types to get type inferrence with the services.
@@ -291,19 +295,19 @@ const Component = [
   (props: Props<typeof services>) => {
     //
   },
-]
+];
 ```
 
 Using custom props type
 
 ```ts
-export type MyProps = Props<typeof services>
+export type MyProps = Props<typeof services>;
 
 const Component = [
   (props: MyProps) => {
     //
   },
-]
+];
 ```
 
 Using default pipe type
@@ -313,19 +317,19 @@ const Component: Pipe<MyProps> = [
   (props) => {
     //
   },
-]
+];
 ```
 
 Using custom pipe type
 
 ```ts
-type MyPipe = Pipe<MyProps>
+type MyPipe = Pipe<MyProps>;
 
 const Component: MyPipe = [
   (props) => {
     //
   },
-]
+];
 ```
 
 **You should declare both a custom props type and a custom handler this will make it easy to get type inferrences accross all your components that use the custom props.**
@@ -337,5 +341,5 @@ const Component = pipe<MyProps>([
   (props) => {
     //
   },
-])
+]);
 ```

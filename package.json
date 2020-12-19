@@ -1,7 +1,7 @@
 {
-  "name": "express-pipes",
+  "name": "express-elements",
   "version": "1.0.3",
-  "description": "Component utility for express",
+  "description": "A lightweight, zero dependency library that allows you to create modular, reusable components in express.",
   "main": "index.js",
   "scripts": {
     "build": "tsc",

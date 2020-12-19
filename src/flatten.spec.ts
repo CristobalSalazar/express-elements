@@ -6,8 +6,8 @@ describe("flatten", () => {
   });
 
   it("should return empty array when passed undefined or null", () => {
-    expect(flatten(null)).toStrictEqual([]);
-    expect(flatten(undefined)).toStrictEqual([]);
+    expect(flatten(null as any)).toStrictEqual([]);
+    expect(flatten(undefined as any)).toStrictEqual([]);
   });
 
   it("should wrap non array values in array", () => {

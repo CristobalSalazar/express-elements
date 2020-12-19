@@ -4,23 +4,24 @@ import { flatten } from "./flatten";
 
 const DATA_KEY = "__component_data";
 
-export function provider(props?: any): express.Handler {
+export function provider(props: any = {}): express.Handler {
   return function (req, res, next) {
-    (req as any)[DATA_KEY] = props
-      ? Object.assign({ req, res }, props)
-      : { req, res };
+    (req as any)[DATA_KEY] = props;
     next();
   };
 }
 
-export function el<T extends T.Props = T.Props>(
-  subject: T.ElementFn | T.Element<T> | object | number | string | null
+export function el<T = any>(
+  ...subjects: (
+    | T.ElementFn<T>
+    | T.Element<T>
+    | object
+    | number
+    | string
+    | null
+  )[]
 ) {
-  if (Array.isArray(subject)) {
-    return flatten(subject).map(convert);
-  } else {
-    return convert(subject);
-  }
+  return flatten(subjects).map(convert);
 }
 
 function isCustomHandler(
@@ -42,22 +43,34 @@ export function convert(
 function convertData(
   data: object | string | number | boolean | null
 ): express.Handler {
-  return (req, res, next) => {
+  const fn: T.MarkedElementFn = (req, res, next) => {
     handleReturn(data, res);
     next();
   };
+  fn.__isComponent = true;
+  return fn;
 }
 
 function convertFn(elFn: T.ElementFn | T.MarkedElementFn): express.Handler {
   if (isCustomHandler(elFn)) return elFn;
+  let shouldCallNext = true;
   const fn: T.MarkedElementFn = async (req, res, next) => {
     try {
-      const props = (req as any)[DATA_KEY] || { req, res };
+      const data = (req as any)[DATA_KEY]; // contains props from upstream
+      const props = {
+        req,
+        res,
+        get next() {
+          shouldCallNext = false;
+          return next;
+        },
+        data,
+      };
       const ret = await elFn(props);
       handleReturn(ret, res);
-      next();
+      if (shouldCallNext) next();
     } catch (err) {
-      next(err);
+      next(err); // this seems fine...
     }
   };
   fn.__isComponent = true;

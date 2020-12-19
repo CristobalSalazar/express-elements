@@ -12,6 +12,10 @@ describe("handle return", () => {
     };
   });
 
+  it("should throw when error is passed", () => {
+    expect(() => handleReturn(new Error("woops"), res)).toThrowError();
+  });
+
   it("should call res.json when obect is passed", () => {
     const data = { hello: "world" };
     handleReturn(data, res);

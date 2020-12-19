@@ -1,15 +1,13 @@
-import { EPERM } from "constants";
 import express from "express";
 import request from "supertest";
 import { el, provider } from ".";
-import { Props } from "./app-types";
 
-describe("Element", () => {
+describe("el()", () => {
   let app: express.Application;
 
   beforeEach(() => {
     app = express();
-    app.use(provider({}));
+    app.use(provider());
   });
 
   it("should convert when called with number", (done) => {
@@ -32,6 +30,64 @@ describe("Element", () => {
     request(app).get("/").expect("/", done);
   });
 
+  it("should handle nested elements", (done) => {
+    const element = el(
+      el([
+        (p) => {
+          p.data.count = 0;
+        },
+        (p) => {
+          p.data.count++;
+        },
+      ]),
+      [
+        el((p) => {
+          p.data.count++;
+        }),
+        [
+          el((p) => {
+            p.data.count++;
+          }),
+        ],
+      ],
+      el((p) => {
+        p.data.count++;
+        return String(p.data.count);
+      })
+    );
+
+    app.get("/", element);
+    request(app)
+      .get("/")
+      .then((res) => {
+        expect(res.text).toBe("4");
+      })
+      .catch(fail)
+      .finally(done);
+  });
+
+  it("should automatically call next when not accessed", (done) => {
+    const element = el(
+      (p) => (p.data.message = "hello"),
+      (p) => p.data.message
+    );
+    app.get("/", element);
+    request(app).get("/").expect("hello", done);
+  });
+
+  it("should not call next when accessed", (done) => {
+    // Note: need to destructure next to trigger the getter
+    const element = el(({ next, res }) => {
+      setTimeout(() => {
+        res.send("hello");
+        next();
+      }, 100);
+    });
+    app.get("/", element);
+    app.get("/", el(500));
+    request(app).get("/").expect("hello", done);
+  });
+
   it("should convert when passed array of element functions", (done) => {
     let first = false;
     let second = false;
@@ -43,7 +99,7 @@ describe("Element", () => {
       () => {
         second = true;
       },
-      (p) => p.req.url,
+      ({ req }) => req.url,
     ]);
 
     app.get("/", Component);
@@ -58,18 +114,48 @@ describe("Element", () => {
       });
   });
 
-  it("should convert when given array of element functions and data types", (done) => {
-    const Component = el<Props<{ message: string }>>([
+  it("data should have stable reference", (done) => {
+    class MyClass {}
+    let instance: MyClass;
+    const Component = el([
+      ({ data }) => {
+        data.instance = new MyClass();
+        instance = data.instance;
+      },
+      ({ data }) => {
+        expect(data.instance).toBe(instance);
+        return null;
+      },
+    ]);
+
+    app.get("/", Component);
+    request(app).get("/").expect(200, done);
+  });
+
+  it("should convert multiple arguments", (done) => {
+    const element = el(
       (p) => {
-        p.message = "hello world";
+        p.data.message = "hello";
       },
       (p) => {
-        expect(p.message).toBe("hello world");
+        expect(p.data.message).toBe("hello");
+      },
+      404
+    );
+
+    app.get("/", element);
+    request(app).get("/").expect(404, done);
+  });
+
+  it("should convert when given array of mixed data types", (done) => {
+    const ComponentStatus = el([
+      ({ data }) => {
+        data.message = "hello world";
       },
       404,
     ]);
 
-    app.get("/", Component);
+    app.get("/", ComponentStatus);
 
     request(app).get("/").expect(404, done);
   });

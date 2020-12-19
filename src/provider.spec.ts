@@ -22,16 +22,17 @@ describe("Components", () => {
       service: new Service(),
     };
 
-    type AppProps = Props<typeof services>;
     const ServiceProvider = provider(services);
+
+    type Data = typeof services;
 
     app.use(ServiceProvider);
     app.get(
       "/",
-      el<AppProps>([
+      el<Data>([
         (props) => {
-          expect(props.service).toBeDefined();
-          expect(props.service).toBe(services.service);
+          expect(props.data.service).toBeDefined();
+          expect(props.data.service).toBe(services.service);
         },
       ])
     );

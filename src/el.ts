@@ -2,7 +2,7 @@ import * as T from "./app-types";
 import express from "express";
 import { flatten } from "./flatten";
 
-const DATA_KEY = "__component_data";
+const DATA_KEY = Symbol("express-elements:data");
 
 export function provider(props: any = {}): express.Handler {
   return function (req, res, next) {
@@ -70,7 +70,7 @@ function convertFn(elFn: T.ElementFn | T.MarkedElementFn): express.Handler {
       handleReturn(ret, res);
       if (shouldCallNext) next();
     } catch (err) {
-      next(err); // this seems fine...
+      next(err);
     }
   };
   fn.__isComponent = true;

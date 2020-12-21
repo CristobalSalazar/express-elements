@@ -1,6 +1,6 @@
 {
   "name": "express-elements",
-  "version": "1.0.3",
+  "version": "1.0.0",
   "description": "A lightweight, zero dependency library that allows you to create modular, reusable components in express.",
   "main": "index.js",
   "scripts": {

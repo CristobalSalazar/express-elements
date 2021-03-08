@@ -22,6 +22,12 @@ describe("el()", () => {
     request(app).get("/").expect("hello world", done);
   });
 
+  it("Should", () => {
+    const handler = el((ctx) => {});
+
+    app.get("/", handler);
+  });
+
   it("should convert when passed element function", (done) => {
     app.get(
       "/",
@@ -33,11 +39,11 @@ describe("el()", () => {
   it("should handle nested elements", (done) => {
     const element = el(
       el([
-        (p) => {
-          p.data.count = 0;
+        (ctx) => {
+          ctx.data.count = 0;
         },
-        (p) => {
-          p.data.count++;
+        (ctx) => {
+          ctx.data.count++;
         },
       ]),
       [
@@ -75,16 +81,18 @@ describe("el()", () => {
     request(app).get("/").expect("hello", done);
   });
 
-  it("should not call next when accessed", (done) => {
-    // Note: need to destructure next to trigger the getter
-    const element = el(({ next, res }) => {
+  it("should not call next when yield is called", (done) => {
+    const element = el((ctx) => {
       setTimeout(() => {
-        res.send("hello");
-        next();
-      }, 100);
+        ctx.send("hello");
+        ctx.next();
+      }, 10);
+      ctx.yield();
     });
+
     app.get("/", element);
     app.get("/", el(500));
+
     request(app).get("/").expect("hello", done);
   });
 

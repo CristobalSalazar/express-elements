@@ -2,7 +2,6 @@ import express from "express";
 import async from "async";
 import request from "supertest";
 import { el, provider } from "./el";
-import { Element, Props } from "./app-types";
 
 describe("Components", () => {
   let app: express.Application;

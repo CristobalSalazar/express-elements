@@ -1,4 +1,4 @@
-import * as T from "./app-types";
+import * as ElementTypes from "./app-types";
 import express from "express";
 import { flatten } from "./flatten";
 
@@ -11,10 +11,32 @@ export function provider(props: any = {}): express.Handler {
   };
 }
 
+export function createContext(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+  data: any
+): ElementTypes.Context<any> {
+  return {
+    yield: () => void 0,
+    query: req.query,
+    params: req.params,
+    body: req.body,
+    headers: req.headers,
+    cookies: req.cookies,
+    json: res.json.bind(res),
+    send: res.send.bind(res),
+    data,
+    req,
+    res,
+    next,
+  };
+}
+
 export function el<T = any>(
   ...subjects: (
-    | T.ElementFn<T>
-    | T.Element<T>
+    | ElementTypes.ElementFn<T>
+    | ElementTypes.Element<T>
     | object
     | number
     | string
@@ -25,16 +47,16 @@ export function el<T = any>(
 }
 
 function isCustomHandler(
-  fn: T.ElementFn | T.MarkedElementFn
-): fn is T.MarkedElementFn {
+  fn: ElementTypes.ElementFn | ElementTypes.MarkedElementFn
+): fn is ElementTypes.MarkedElementFn {
   return fn.__isComponent !== void 0;
 }
 
 export function convert(
-  data: object | string | number | boolean | null | T.ElementFn
+  data: object | string | number | boolean | null | ElementTypes.ElementFn
 ): express.Handler {
   if (typeof data === "function") {
-    return convertFn(data as T.ElementFn);
+    return createExpressHandler(data as ElementTypes.ElementFn);
   } else {
     return convertData(data);
   }
@@ -43,46 +65,59 @@ export function convert(
 function convertData(
   data: object | string | number | boolean | null
 ): express.Handler {
-  const fn: T.MarkedElementFn = (req, res, next) => {
-    handleReturn(data, res);
+  const fn: ElementTypes.MarkedElementFn = (req, res, next) => {
+    handleReturnResponse(data, res);
     next();
   };
   fn.__isComponent = true;
   return fn;
 }
 
-function convertFn(elFn: T.ElementFn | T.MarkedElementFn): express.Handler {
-  if (isCustomHandler(elFn)) return elFn;
-  let shouldCallNext = true;
-  const fn: T.MarkedElementFn = async (req, res, next) => {
+function createExpressHandler(
+  el: ElementTypes.ElementFn | ElementTypes.MarkedElementFn
+): express.Handler {
+  if (isCustomHandler(el)) {
+    return el;
+  }
+
+  const handler: ElementTypes.MarkedElementFn = async (req, res, next) => {
     try {
       const data = (req as any)[DATA_KEY]; // contains props from upstream
-      const props = {
-        req,
-        res,
-        get next() {
-          shouldCallNext = false;
-          return next;
-        },
-        data,
+      const ctx = createContext(req, res, next, data);
+
+      let shouldCallNext = true;
+
+      const preventNext = () => {
+        shouldCallNext = false;
       };
-      const ret = await elFn(props);
-      handleReturn(ret, res);
-      if (shouldCallNext) next();
+
+      ctx.yield = preventNext;
+
+      const ret = await el(ctx);
+      handleReturnResponse(ret, res);
+      if (shouldCallNext) {
+        next();
+      }
     } catch (err) {
       next(err);
     }
   };
-  fn.__isComponent = true;
-  return fn;
+  handler.__isComponent = true;
+  return handler;
 }
 
-export function handleReturn(returnValue: any, res: express.Response) {
-  if (returnValue instanceof Error) throw returnValue;
-  if (returnValue === null) return res.end();
+export function handleReturnResponse(returnValue: any, res: express.Response) {
+  if (returnValue instanceof Error) {
+    throw returnValue;
+  }
+
+  if (returnValue === null) {
+    return res.end();
+  }
+
   switch (typeof returnValue) {
     case "undefined":
-      return;
+      return; // does nothing
     case "object":
       return res.json(returnValue);
     case "number":

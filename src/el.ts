@@ -1,6 +1,8 @@
-import * as ElementTypes from "./app-types";
+import * as T from "./app-types";
 import express from "express";
 import { flatten } from "./flatten";
+import { Reply } from "./errors";
+import { ESRCH } from "constants";
 
 const DATA_KEY = Symbol("express-elements:data");
 
@@ -16,8 +18,9 @@ export function createContext(
   res: express.Response,
   next: express.NextFunction,
   data: any
-): ElementTypes.Context<any> {
+): T.Context<any> {
   return {
+    reply: new Reply(res),
     yield: () => void 0,
     query: req.query,
     params: req.params,
@@ -33,10 +36,10 @@ export function createContext(
   };
 }
 
-export function el<T = any>(
+export function handler<T = any>(
   ...subjects: (
-    | ElementTypes.ElementFn<T>
-    | ElementTypes.Element<T>
+    | T.ElementFn<T>
+    | T.Element<T>
     | object
     | number
     | string
@@ -47,16 +50,16 @@ export function el<T = any>(
 }
 
 function isCustomHandler(
-  fn: ElementTypes.ElementFn | ElementTypes.MarkedElementFn
-): fn is ElementTypes.MarkedElementFn {
+  fn: T.ElementFn | T.MarkedElementFn
+): fn is T.MarkedElementFn {
   return fn.__isComponent !== void 0;
 }
 
 export function convert(
-  data: object | string | number | boolean | null | ElementTypes.ElementFn
+  data: object | string | number | boolean | null | T.ElementFn
 ): express.Handler {
   if (typeof data === "function") {
-    return createExpressHandler(data as ElementTypes.ElementFn);
+    return createExpressHandler(data as T.ElementFn);
   } else {
     return convertData(data);
   }
@@ -65,7 +68,7 @@ export function convert(
 function convertData(
   data: object | string | number | boolean | null
 ): express.Handler {
-  const fn: ElementTypes.MarkedElementFn = (req, res, next) => {
+  const fn: T.MarkedElementFn = (req, res, next) => {
     handleReturnResponse(data, res);
     next();
   };
@@ -74,34 +77,30 @@ function convertData(
 }
 
 function createExpressHandler(
-  el: ElementTypes.ElementFn | ElementTypes.MarkedElementFn
+  el: T.ElementFn | T.MarkedElementFn
 ): express.Handler {
   if (isCustomHandler(el)) {
     return el;
   }
 
-  const handler: ElementTypes.MarkedElementFn = async (req, res, next) => {
+  const handler: T.MarkedElementFn = async (req, res, next) => {
+    const data = (req as any)[DATA_KEY]; // contains props from upstream
+    const ctx = createContext(req, res, next, data);
+    let shouldCallNext = true;
+    const yieldfn = () => {
+      shouldCallNext = false;
+    };
+    ctx.yield = yieldfn;
+
     try {
-      const data = (req as any)[DATA_KEY]; // contains props from upstream
-      const ctx = createContext(req, res, next, data);
-
-      let shouldCallNext = true;
-
-      const preventNext = () => {
-        shouldCallNext = false;
-      };
-
-      ctx.yield = preventNext;
-
       const ret = await el(ctx);
       handleReturnResponse(ret, res);
-      if (shouldCallNext) {
-        next();
-      }
+      shouldCallNext && next();
     } catch (err) {
       next(err);
     }
   };
+
   handler.__isComponent = true;
   return handler;
 }

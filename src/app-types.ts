@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction, Handler } from "express";
+import { Reply } from "./errors";
 
 export type Element<T = any> = Array<ElementFn<T> | Element<T>>;
 
 export interface ElementFn<T = any> {
-  (ctx: Context<T>): any;
+  (ctx: Context<T>): Promise<unknown>;
   __isComponent?: boolean;
 }
 
@@ -12,6 +13,7 @@ export interface MarkedElementFn extends Handler {
 }
 
 export type Context<T = any> = {
+  reply: Reply;
   req: Request;
   res: Response;
   yield: () => void;

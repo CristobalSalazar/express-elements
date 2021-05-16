@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { el, provider } from ".";
+import { handler, provider } from ".";
 
 describe("el()", () => {
   let app: express.Application;
@@ -11,34 +11,34 @@ describe("el()", () => {
   });
 
   it("should convert when called with number", (done) => {
-    app.get("/", el(200));
-    app.get("/notfound", el(404));
+    app.get("/", handler(200));
+    app.get("/notfound", handler(404));
     request(app).get("/").expect(200, done);
     request(app).get("/notfound").expect(404, done);
   });
 
   it("should convert when called with a string", (done) => {
-    app.get("/", el("hello world"));
+    app.get("/", handler("hello world"));
     request(app).get("/").expect("hello world", done);
   });
 
   it("Should", () => {
-    const handler = el((ctx) => {});
+    const h = handler((ctx) => {});
 
-    app.get("/", handler);
+    app.get("/", h);
   });
 
   it("should convert when passed element function", (done) => {
     app.get(
       "/",
-      el((p) => p.req.url)
+      handler((p) => p.req.url)
     );
     request(app).get("/").expect("/", done);
   });
 
   it("should handle nested elements", (done) => {
-    const element = el(
-      el([
+    const element = handler(
+      handler([
         (ctx) => {
           ctx.data.count = 0;
         },
@@ -47,16 +47,16 @@ describe("el()", () => {
         },
       ]),
       [
-        el((p) => {
+        handler((p) => {
           p.data.count++;
         }),
         [
-          el((p) => {
+          handler((p) => {
             p.data.count++;
           }),
         ],
       ],
-      el((p) => {
+      handler((p) => {
         p.data.count++;
         return String(p.data.count);
       })
@@ -73,7 +73,7 @@ describe("el()", () => {
   });
 
   it("should automatically call next when not accessed", (done) => {
-    const element = el(
+    const element = handler(
       (p) => (p.data.message = "hello"),
       (p) => p.data.message
     );
@@ -82,7 +82,7 @@ describe("el()", () => {
   });
 
   it("should not call next when yield is called", (done) => {
-    const element = el((ctx) => {
+    const element = handler((ctx) => {
       setTimeout(() => {
         ctx.send("hello");
         ctx.next();
@@ -91,7 +91,7 @@ describe("el()", () => {
     });
 
     app.get("/", element);
-    app.get("/", el(500));
+    app.get("/", handler(500));
 
     request(app).get("/").expect("hello", done);
   });
@@ -100,7 +100,7 @@ describe("el()", () => {
     let first = false;
     let second = false;
 
-    const Component = el([
+    const Component = handler([
       () => {
         first = true;
       },
@@ -125,7 +125,7 @@ describe("el()", () => {
   it("data should have stable reference", (done) => {
     class MyClass {}
     let instance: MyClass;
-    const Component = el([
+    const Component = handler([
       ({ data }) => {
         data.instance = new MyClass();
         instance = data.instance;
@@ -141,7 +141,7 @@ describe("el()", () => {
   });
 
   it("should convert multiple arguments", (done) => {
-    const element = el(
+    const element = handler(
       (p) => {
         p.data.message = "hello";
       },
@@ -156,7 +156,7 @@ describe("el()", () => {
   });
 
   it("should convert when given array of mixed data types", (done) => {
-    const ComponentStatus = el([
+    const ComponentStatus = handler([
       ({ data }) => {
         data.message = "hello world";
       },
